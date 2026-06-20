@@ -3,7 +3,6 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class HoopScoreZone : MonoBehaviour
 {
-    [SerializeField] private int points = 1;
     [SerializeField] private float scoreCooldown = 1.5f;
     [SerializeField] private float minDownwardSpeed = 0.5f;
     [SerializeField] private bool debugScore;
@@ -41,12 +40,12 @@ public class HoopScoreZone : MonoBehaviour
         lastScoreTime = Time.time;
 
         if (GameManager.Instance != null)
-            GameManager.Instance.AddScore(points);
+            GameManager.Instance.RegisterBasket(ball.LastThrowPosition);
         else
             Debug.LogWarning("[HoopScoreZone] No GameManager in scene.", this);
 
         if (debugScore)
-            Debug.Log($"[HoopScoreZone] Basket! +{points}", this);
+            Debug.Log($"[HoopScoreZone] Basket from {ball.LastThrowPosition}", this);
     }
 
     private static bool TryGetBall(Collider other, out Ball ball, out Rigidbody rb)

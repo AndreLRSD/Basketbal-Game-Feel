@@ -1,11 +1,14 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class BallThrower : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Transform holdPoint;
     [SerializeField] private Camera cam;
+    [SerializeField] private CameraShake cameraShake;
     [SerializeField] private LineRenderer trajectoryLine;
+    [SerializeField] private Slider forceSlider;
 
     [Header("Pickup")]
     [SerializeField] private float pickupRange = 4f;
@@ -31,18 +34,38 @@ public class BallThrower : MonoBehaviour
     private void Awake()
     {
         if (cam == null) cam = GetComponent<Camera>();
+        if (cameraShake == null) cameraShake = GetComponent<CameraShake>();
         if (trajectoryLine != null) trajectoryLine.enabled = false;
 
         if (holdPoint != null)
             holdPoint.localPosition = holdOffset;
+
+        SetupForceSlider();
+    }
+
+    private void SetupForceSlider()
+    {
+        if (forceSlider == null)
+            return;
+
+        forceSlider.minValue = 0f;
+        forceSlider.maxValue = 1f;
+        forceSlider.interactable = false;
+        forceSlider.value = 0f;
+        forceSlider.gameObject.SetActive(false);
     }
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.R))
+            RecallBallToHands();
+
         if (heldBall == null)
         {
             if (Input.GetKeyDown(KeyCode.E))
                 TryPickupBall();
+
+            UpdateForceSlider();
             return;
         }
 
@@ -65,6 +88,8 @@ public class BallThrower : MonoBehaviour
             if (Input.GetMouseButtonUp(0))
                 ThrowBall();
         }
+
+        UpdateForceSlider();
     }
 
     private void LateUpdate()
@@ -74,6 +99,47 @@ public class BallThrower : MonoBehaviour
 
         float pullBack = isCharging ? charge01 * pullBackDistance : 0f;
         holdPoint.localPosition = holdOffset + Vector3.back * pullBack;
+    }
+
+    public void RecallBallToHands()
+    {
+        if (heldBall != null)
+            return;
+
+        StopCharging();
+
+        Ball ball = FindRecallableBall();
+        if (ball == null)
+        {
+            LogPickup("Recall failed — no ball available");
+            return;
+        }
+
+        heldBall = ball;
+        heldBall.SetHeld(holdPoint);
+        LogPickup($"Recalled '{ball.name}' to hands");
+    }
+
+    private Ball FindRecallableBall()
+    {
+        Ball[] balls = FindObjectsByType<Ball>(FindObjectsSortMode.None);
+        Ball closest = null;
+        float closestDist = float.MaxValue;
+
+        foreach (Ball ball in balls)
+        {
+            if (ball.State == Ball.BallState.Held)
+                continue;
+
+            float dist = Vector3.Distance(cam.transform.position, ball.transform.position);
+            if (dist >= closestDist)
+                continue;
+
+            closest = ball;
+            closestDist = dist;
+        }
+
+        return closest;
     }
 
     private void TryPickupBall()
@@ -176,6 +242,8 @@ public class BallThrower : MonoBehaviour
         heldBall.Release(velocity, spin);
         heldBall = null;
 
+        cameraShake?.ShakeFromThrowForce(force, minThrowForce, maxThrowForce);
+
         StopCharging();
     }
 
@@ -189,6 +257,26 @@ public class BallThrower : MonoBehaviour
 
         if (trajectoryLine != null)
             trajectoryLine.enabled = false;
+
+        UpdateForceSlider();
+    }
+
+    private void UpdateForceSlider()
+    {
+        if (forceSlider == null)
+            return;
+
+        bool visible = heldBall != null;
+        if (forceSlider.gameObject.activeSelf != visible)
+            forceSlider.gameObject.SetActive(visible);
+
+        if (!visible)
+        {
+            forceSlider.value = 0f;
+            return;
+        }
+
+        forceSlider.value = charge01;
     }
 
     private void UpdateTrajectoryPreview()

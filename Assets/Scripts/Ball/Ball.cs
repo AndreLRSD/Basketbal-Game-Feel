@@ -4,17 +4,28 @@ public class Ball : MonoBehaviour
 {
     public enum BallState { Free, Held, Thrown }
 
+    [Header("Physics")]
     [SerializeField] private Rigidbody rb;
     [SerializeField] private Collider ballCollider;
     [SerializeField] private float maxPickupSpeed = 2.5f;
+
+    [Header("Trails")]
+    [SerializeField] private GameObject[] trailPrefabs;
+    [SerializeField] private Transform trailAnchor;
+
+    [Header("Debug")]
     [SerializeField] private bool debugPickup;
 
     public BallState State { get; private set; } = BallState.Free;
+    public Vector3 LastThrowPosition { get; private set; }
+
+    private GameObject activeTrailInstance;
 
     private void Awake()
     {
         if (rb == null) rb = GetComponent<Rigidbody>();
         if (ballCollider == null) ballCollider = GetComponent<Collider>();
+        if (trailAnchor == null) trailAnchor = transform;
     }
 
     public bool CanBePickedUp()
@@ -49,6 +60,8 @@ public class Ball : MonoBehaviour
 
     public void SetHeld(Transform point)
     {
+        ClearTrail();
+
         State = BallState.Held;
 
         rb.isKinematic = true;
@@ -70,10 +83,13 @@ public class Ball : MonoBehaviour
     {
         DetachFromHold();
 
+        LastThrowPosition = transform.position;
         State = BallState.Free;
         rb.isKinematic = false;
         rb.linearVelocity = velocity;
         rb.angularVelocity = spin;
+
+        SpawnRandomTrail();
 
         if (debugPickup)
             Debug.Log($"[Ball] Released — state={State}, speed={velocity.magnitude:F2}", this);
@@ -81,6 +97,7 @@ public class Ball : MonoBehaviour
 
     public void Drop()
     {
+        ClearTrail();
         DetachFromHold();
         State = BallState.Free;
         rb.isKinematic = false;
@@ -91,9 +108,36 @@ public class Ball : MonoBehaviour
 
     public void ResetToFree()
     {
+        ClearTrail();
         DetachFromHold();
         State = BallState.Free;
         rb.isKinematic = false;
+    }
+
+    private void SpawnRandomTrail()
+    {
+        ClearTrail();
+
+        if (trailPrefabs == null || trailPrefabs.Length == 0)
+            return;
+
+        GameObject prefab = trailPrefabs[Random.Range(0, trailPrefabs.Length)];
+        if (prefab == null)
+            return;
+
+        activeTrailInstance = Instantiate(prefab, trailAnchor);
+        activeTrailInstance.transform.localPosition = Vector3.zero;
+        activeTrailInstance.transform.localRotation = Quaternion.identity;
+        activeTrailInstance.transform.localScale = Vector3.one;
+    }
+
+    private void ClearTrail()
+    {
+        if (activeTrailInstance == null)
+            return;
+
+        Destroy(activeTrailInstance);
+        activeTrailInstance = null;
     }
 
     private void DetachFromHold()
