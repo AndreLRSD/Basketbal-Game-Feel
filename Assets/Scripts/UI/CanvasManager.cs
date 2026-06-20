@@ -10,6 +10,7 @@ public class CanvasManager : MonoBehaviour
 
     [Header("Pause")]
     [SerializeField] private GameObject pauseMenuPanel;
+    [SerializeField] private Button quitButton;
 
     [Header("Settings Sliders")]
     [SerializeField] private Slider musicSlider;
@@ -44,6 +45,7 @@ public class CanvasManager : MonoBehaviour
             mouseLook = FindFirstObjectByType<MouseLook>();
 
         BindSliders();
+        BindButtons();
         LoadSavedSettings();
     }
 
@@ -56,6 +58,18 @@ public class CanvasManager : MonoBehaviour
     public void TogglePause()
     {
         SetPaused(!IsPaused);
+    }
+
+    public void QuitGame()
+    {
+        Time.timeScale = 1f;
+        PlayerPrefs.Save();
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
     public void SetPaused(bool paused)
@@ -90,6 +104,12 @@ public class CanvasManager : MonoBehaviour
 
         if (sensitivitySlider != null)
             sensitivitySlider.onValueChanged.AddListener(OnSensitivitySliderChanged);
+    }
+
+    private void BindButtons()
+    {
+        if (quitButton != null)
+            quitButton.onClick.AddListener(QuitGame);
     }
 
     private void LoadSavedSettings()
