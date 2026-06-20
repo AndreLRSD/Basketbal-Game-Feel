@@ -33,7 +33,9 @@ public class Hitstop : MonoBehaviour
 
         yield return new WaitForSecondsRealtime(duration);
 
-        Time.timeScale = previousTimeScale;
+        if (!CanvasManager.IsPaused)
+            Time.timeScale = previousTimeScale;
+
         activeHitstop = null;
     }
 }

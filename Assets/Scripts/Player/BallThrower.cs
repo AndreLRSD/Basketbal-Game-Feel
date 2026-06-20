@@ -27,6 +27,11 @@ public class BallThrower : MonoBehaviour
     [SerializeField] private float spinStrength = 8f;
     [SerializeField] private float chargeSpeed = 0.8f;
 
+    [Header("Throw SFX")]
+    [SerializeField] private AudioClip throwSfxWeak;
+    [SerializeField] private AudioClip throwSfxMedium;
+    [SerializeField] private AudioClip throwSfxStrong;
+
     private Ball heldBall;
     private bool isCharging;
     private float charge01;
@@ -57,6 +62,9 @@ public class BallThrower : MonoBehaviour
 
     private void Update()
     {
+        if (CanvasManager.IsPaused)
+            return;
+
         if (Input.GetKeyDown(KeyCode.R))
             RecallBallToHands();
 
@@ -243,8 +251,28 @@ public class BallThrower : MonoBehaviour
         heldBall = null;
 
         cameraShake?.ShakeFromThrowForce(force, minThrowForce, maxThrowForce);
+        PlayThrowSfx(charge01);
 
         StopCharging();
+    }
+
+    private void PlayThrowSfx(float charge)
+    {
+        AudioClip clip = GetThrowSfxForCharge(charge);
+        if (clip == null)
+            return;
+
+        Vector3 position = holdPoint != null ? holdPoint.position : cam.transform.position;
+        AudioManager.Instance?.PlaySfx(clip, position);
+    }
+
+    private AudioClip GetThrowSfxForCharge(float charge)
+    {
+        if (charge < 0.33f)
+            return throwSfxWeak;
+        if (charge < 0.66f)
+            return throwSfxMedium;
+        return throwSfxStrong;
     }
 
     private void StopCharging()

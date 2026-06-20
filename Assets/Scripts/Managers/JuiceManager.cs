@@ -22,6 +22,11 @@ public class JuiceManager : MonoBehaviour
     [SerializeField] private GameObject[] scoreVfxPrefabs;
     [SerializeField] private float scoreVfxLifetime = 3f;
 
+    [Header("Score SFX (index 0=close, 1=medium, 2=long)")]
+    [SerializeField] private AudioClip scoreSfxClose;
+    [SerializeField] private AudioClip scoreSfxMedium;
+    [SerializeField] private AudioClip scoreSfxLong;
+
     private void OnDisable()
     {
         if (GameManager.Instance != null)
@@ -44,6 +49,7 @@ public class JuiceManager : MonoBehaviour
     {
         PlayHitstop(data.Tier);
         PlayCameraShake(data.Tier);
+        PlayScoreSfx(data.Tier);
         SpawnScoreVfx(data.Tier);
     }
 
@@ -77,6 +83,26 @@ public class JuiceManager : MonoBehaviour
         cameraShake.Shake(intensity, scoreShakeDuration);
     }
 
+    private void PlayScoreSfx(int tier)
+    {
+        AudioClip clip = GetScoreSfxForTier(tier);
+        if (clip == null)
+            return;
+
+        Vector3 position = scoreVfxSpawn != null ? scoreVfxSpawn.position : transform.position;
+        AudioManager.Instance?.PlaySfx(clip, position);
+    }
+
+    private AudioClip GetScoreSfxForTier(int tier)
+    {
+        return tier switch
+        {
+            0 => scoreSfxClose,
+            1 => scoreSfxMedium,
+            _ => scoreSfxLong
+        };
+    }
+
     private void SpawnScoreVfx(int tier)
     {
         if (scoreVfxPrefabs == null || scoreVfxPrefabs.Length == 0)
@@ -89,6 +115,7 @@ public class JuiceManager : MonoBehaviour
 
         Vector3 position = scoreVfxSpawn != null ? scoreVfxSpawn.position : transform.position;
         GameObject instance = Instantiate(prefab, position, Quaternion.identity);
+        AudioManager.Instance?.RegisterSfxHierarchy(instance);
         Destroy(instance, scoreVfxLifetime);
     }
 }

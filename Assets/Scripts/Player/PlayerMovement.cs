@@ -16,6 +16,9 @@ public class PlayerMovement : MonoBehaviour
     }
     private void Update()
     {
+        if (CanvasManager.IsPaused)
+            return;
+
         HandleMovement();
     }
     private void HandleMovement()

@@ -129,6 +129,8 @@ public class Ball : MonoBehaviour
         activeTrailInstance.transform.localPosition = Vector3.zero;
         activeTrailInstance.transform.localRotation = Quaternion.identity;
         activeTrailInstance.transform.localScale = Vector3.one;
+
+        AudioManager.Instance?.RegisterSfxHierarchy(activeTrailInstance);
     }
 
     private void ClearTrail()
